@@ -1,30 +1,30 @@
-#Flux installation
+# Flux installation
 
 This post describes my investigation into what happens when I install flux on a k8s cluster. 
 The goal is not to teach you - I don't feel I have the authority to do that - but rather to document my own learning.
 
 So without further ado, let's dive into what happens when we install [flux](https://fluxcd.io/) onto a Kubernetes cluster.
 
-##Preparation
+## Preparation
 
 - Have a kubernetes cluster to work with; you could also use [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#creating-a-cluster) to set up a local cluster inside Docker.
 - [Install](https://fluxcd.io/flux/installation/#install-the-flux-cli) the Flux CLI on your local machine
 - Grab the flux [source code](https://github.com/fluxcd/flux2) to follow along
 
-##Expectations
+## Expectations
 
 Let's set a few expectations before applying changes on the cluster; then we verify these expectations afterwards.
 [This list](https://github.com/fluxcd/flux2#components) shows that installing helm to our cluster will result in the creation of at least 5 controllers and 13 Custom Resource Definitions.
 We'll be able to verify this by using `kubectl get crd` and by looking for corresponding pods running controllers. These are probably created in some flux-specific namespace.
 
-##Operator Pattern
+## Operator Pattern
 
 Helm creates a few `CustomResourceDefinitions` and controllers in the cluster. This hints at a very common design pattern in Kubernetes named `Operator`, which allows you to extend the Kubernetes API. To implement it, you create `CustomResourceDefinitions` (CRD) and controllers.
 The `CustomResourceDefinitions` provide the API for your functionality by defining new resource types: after installing the CRDs on their cluster, users will be able to instantiate resources using their existing tooling, for example `kubectl`. These resources declare the desired state of the cluster.
 The controller is a software component responsible for bringing the current state of the cluster into the desired one as described by the created resources.
 
 
-##Installation
+## Installation
 
 Before installing, let's verify that there are no `CustomResourceDefinitions` on the cluster:
 ```
@@ -32,7 +32,7 @@ $ kubectl get crd
 No resources found
 ```
 
-###What to expect
+### What to expect
 
 The [flux documentation](https://fluxcd.io/flux/installation/) specifies multiple ways to install flux to the cluster: [Bootstrap with Flux CLI](https://fluxcd.io/flux/installation/#bootstrap-with-flux-cli), [Bootstrap with Terraform](https://fluxcd.io/flux/installation/#bootstrap-with-terraform) and [Dev install](https://fluxcd.io/flux/installation/#dev-install) which is what we'll be using here; we just want to see CRDs and controllers being created.
 
@@ -59,7 +59,7 @@ $ yq e -N '.kind' ~/Downloads/install.yaml | sort | uniq -c
 The expected 13 `CustomResourceDefinitions` are here.
 The controllers are likely implemented as code running in pods managed by the 6 `Deployments` that will be created.
 
-###Actually installing
+### Actually installing
 Let's just do the installation and see what pops up:
 
 ```
@@ -106,7 +106,7 @@ networkpolicy.networking.k8s.io/allow-webhooks created
 
 As expected, 13 `CustomResourceDefinitions` and 6 deployments related to controllers were created (at least 5 were expected based on the documentation); these sit in the `flux-system` namespace which is created first.
 
-###Looking at the CRDs
+### Looking at the CRDs
 Let's have a look at the `CustomResourceDefinitions`:
 
 ```
@@ -191,7 +191,7 @@ FIELDS:
 
 This immediately displays some juicy information and gives us spoilers about what lies ahead.
 
-###Looking at the deployments
+### Looking at the deployments
 Let's also have a look at the deployments:
 
 ```
@@ -240,7 +240,7 @@ $ kubectl logs -n flux-system source-controller-f7c9b977f-sk5pt
 This looks like a pod that happily started up and does nothing in particular.
 In the next part, let's see how we can get it to actually do something.
 
-##Resources
+## Resources
 
 - Ibryam and Huss, "Kubernetes Patterns: Reusable Elements for Designing Cloud Native Applications (Second Edition)", O'Reilly publishing - [free download](https://www.redhat.com/en/engage/kubernetes-containers-architecture-s-201910240918?sc_cid=7013a000003SxS6AAK&gad_source=1&gclid=CjwKCAjwm_SzBhAsEiwAXE2Cv2D0dUK_8_D_KNsxd0qsb_cbjCJ3s-tyPmx8-HlDKjOKqqEzs71vHRoCWEcQAvD_BwE&gclsrc=aw.ds) courtesy of RedHat
 
