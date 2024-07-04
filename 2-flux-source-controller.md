@@ -66,7 +66,28 @@ If this resource is not suspended, it then proceeds to call private `reconcile`,
 - `reconcileArtifact`
 `reconcile` creates a temp directory, then calls each of these reconcile functions; in the end, it notifies of the results. Effectively, the result of these actions is that a local version of the source code from the referenced git repository is up-to-date with that repository.
 
+`reconcileStorage` checks the presence and integrity of the artifact in the pod's local storage. If the artifact's digest does not match its contents, it is deleted and re-fetched.
+
+`reconcileSource` takes care of cloning the remote git repository locally, with various optimizations
+
+`reconcileInclude` takes care of subcontents specified in `.spec.include` as detailed [here](https://fluxcd.io/flux/components/source/gitrepositories/#include)
+
+`reconcileArtifact` takes care of archiving the cloned source repository in a tarball. It [sets](https://github.com/fluxcd/source-controller/blob/v1.3.0/internal/controller/gitrepository_controller.go#L681-L690) the `ArtifactInStorageCondition` on the GitRepository's status to `true`, and produces the well-known `stored artifact for revision '<branch>@sha1:<digest>'` message.
+
+##### BucketReconciler
+
+`BucketReconciler` monitors and reconciles `Bucket` type resources. 
+It checks if the monitored resource is suspended, and if not, proceeds to apply a series of reconciliation steps:
+- reconcileStorage
+- reconcileSource
+- reconcileArtifact
+Finally, it summarizes and patches the resource.
+The reconciliation steps act much like they do for `GitRepositoryReconciler`.
+
+
 ### In Practice
+
+#### GitRepositoryReconciler
 
 Let's see this in practice. Let's try [this example](https://fluxcd.io/flux/components/source/gitrepositories/#example) GitRepository manifest from the fluxcd documentation:
 
