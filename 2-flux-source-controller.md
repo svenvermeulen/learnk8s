@@ -2,7 +2,7 @@
 During the [installation](TODO) of flux on the cluster, we saw that a number of `CustomResourceDefinitions` and `Deployments` were created.
 Let's dive a bit deeper into one of the `Deployments`, which manages a pod running the `source-controller`.
 
-##Source Controller Deployment
+## Source Controller Deployment
 
 The `source-controller` deployment in the `flux-system` namespace manages a pod based on the `ghcr.io/fluxcd/source-controller:v1.3.0` image:
 
@@ -15,11 +15,11 @@ ghcr.io/fluxcd/source-controller:v1.3.0
 
 `Dockerfile` [adds](https://github.com/fluxcd/source-controller/blob/v1.3.0/Dockerfile) `source-controller` on top of a plain linux distro. 
 
-##Source Controller Code
+## Source Controller Code
 
 `source-controller` (I'm looking at the [v1.3.0 code](https://github.com/fluxcd/source-controller/tree/v1.3.0)) implements a controller that monitors cluster state for a set of custom resources and reconciles actual state towards the desired state.
 
-###Expectations
+### Expectations
 
 - `source-controller` probably knows a few different types of repositories (GIT, S3 buckets, etc) and 
 - There are probably going to be some go types that correspond to the CustomResourceDefinitions in the flux-system namespace so that the go code can easily work with resources. 
@@ -27,7 +27,7 @@ ghcr.io/fluxcd/source-controller:v1.3.0
 - There should be some discrete code for reconciling cluster state to move it towards the desired state
 
 
-###Actual code
+### Actual code
 
 `source-controller` includes a few `CustomResourceDefinitions` [here](https://github.com/fluxcd/source-controller/blob/v1.3.0/config/crd/kustomization.yaml). These are defined in `source-controller` and referenced in `flux` through [this manifest](https://github.com/fluxcd/flux2/blob/main/manifests/bases/source-controller/kustomization.yaml#L4)
 
@@ -44,7 +44,7 @@ All these Reconcilers are set up to be controlled by a `controllerManager` which
 Then, a `http.FileServer` is started up in the background (If and when the current instance is elected leader) and finally the controller manager is started.
 
 
-####Reconcilers
+#### Reconcilers
 
 The four reconcilers spun up in `main.go` match nicely to four of the CRDs [defined](https://github.com/fluxcd/source-controller/tree/v1.3.0/config/crd/bases) in `source-controller`:
 
@@ -55,7 +55,7 @@ The four reconcilers spun up in `main.go` match nicely to four of the CRDs [defi
 
 There is a fifth CRD, `HelmChart` which is probably also taken care of by `HelmRepositoryReconciler` - we can confirm this further down the road when looking at the reconcilers one by one.
 
-#####GitRepositoryReconciler
+##### GitRepositoryReconciler
 `GitRepositoryReconciler` provides a public method `Reconcile` which in turn calls a private method `reconcile`.
 
 `Reconcile` receives a representation of the `GitRepository` resource it should reconcile.
@@ -66,6 +66,7 @@ If this resource is not suspended, it then proceeds to call private `reconcile`,
 - `reconcileArtifact`
 `reconcile` creates a temp directory, then calls each of these reconcile functions; in the end, it notifies of the results. Effectively, the result of these actions is that a local version of the source code from the referenced git repository is up-to-date with that repository.
 
+### In Practice
 
 Let's see this in practice. Let's try [this example](https://fluxcd.io/flux/components/source/gitrepositories/#example) GitRepository manifest from the fluxcd documentation:
 
@@ -152,6 +153,7 @@ source-controller-f7c9b977f-sk5pt              1/1     Running   3 (5d7h ago)   
 Let's have a quick look at its logs; since I created a `GitRepository` resource, there should be entries related to its reconciliation
 
 ```
+$ kubectl logs -n flux-system source-controller-f7c9b977f-sk5pt
 ....
 {"level":"info","ts":"2024-07-04T11:51:38.882Z","msg":"stored artifact for commit 'Merge pull request #374 from stefanprodan/release-...'","controller":"gitrepository","controllerGroup":"source.toolkit.fluxcd.io","controllerKind":"GitRepository","GitRepository":{"name":"podinfo","namespace":"default"},"namespace":"default","name":"podinfo","reconcileID":"d919ba06-f863-4e01-b1bf-fa210e80dc8d"}
 {"level":"info","ts":"2024-07-04T11:56:51.013Z","msg":"no changes since last reconcilation: observed revision 'master@sha1:0b1481aa8ed0a6c34af84f779824a74200d5c1d6'","controller":"gitrepository","controllerGroup":"source.toolkit.fluxcd.io","controllerKind":"GitRepository","GitRepository":{"name":"podinfo","namespace":"default"},"namespace":"default","name":"podinfo","reconcileID":"8cf425cb-c10c-4d21-8e5a-b2020af8ee2e"}
