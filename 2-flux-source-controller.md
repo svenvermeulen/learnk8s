@@ -202,6 +202,15 @@ total 296
 -rw-r--r--    1 nobody   1337             0 Jul  4 11:51 0b1481aa8ed0a6c34af84f779824a74200d5c1d6.tar.gz.lock
 ```
 
+Likewise, there is a [check](https://github.com/fluxcd/source-controller/blob/v1.3.0/internal/controller/gitrepository_controller.go#L420-L431) in `reconcileStorage` which emits an event `building artifact: disappeared from storage` if the artifact is missing. Let's delete it and watch that event:
+
+```
+$ kubectl exec -n flux-system -it source-controller-f7c9b977f-sk5pt -- /bin/sh
+~ $ rm /data/gitrepository/default/podinfo/0b1481aa8ed0a6c34af84f779824a74200d5c1d6.tar.gz
+```
+
+After a while, when reconciliation runs, the artifact is re-created by the code but the only message I can find about it is `stored artifact for revision 'master@sha1:0b1481aa8ed0a6c34af84f779824a74200d5c1d6'` in the GitRepository's `status.conditions`; no event shows up with `kubectl get events`.
+
 
 
   
