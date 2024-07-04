@@ -82,7 +82,7 @@ It checks if the monitored resource is suspended, and if not, proceeds to apply 
 - reconcileSource
 - reconcileArtifact
 Finally, it summarizes and patches the resource.
-The reconciliation steps act much like they do for `GitRepositoryReconciler`.
+The reconciliation steps act much like they do for `GitRepositoryReconciler`. 
 
 
 ### In Practice
@@ -161,6 +161,13 @@ status:
 ```
 
 `spec` describes the desired state of the cluster, while `status` describes the observed state.
+`status.artifact.url` points to the http file server running inside the `source-controller` pod; the artifact can be downloaded trivially from pods within the cluster
+
+```
+$ wget http://source-controller.flux-system.svc.cluster.local./gitrepository/default/podinfo/0b1481aa8ed0a6c34af84f779824a74200d5c1d6.tar.gz
+```
+
+
 Based on the `source-controller` code and `status.artifact.url`, we should be able to connect to the source controller pod and locate the artifact on its storage volume.
 
 
