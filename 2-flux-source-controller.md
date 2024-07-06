@@ -64,6 +64,7 @@ If this resource is not suspended, it then proceeds to call private `reconcile`,
 - `reconcileSource`
 - `reconcileInclude`
 - `reconcileArtifact`
+
 `reconcile` creates a temp directory, then calls each of these reconcile functions; in the end, it notifies of the results. Effectively, the result of these actions is that a local version of the source code from the referenced git repository is up-to-date with that repository.
 
 `reconcileStorage` checks the presence and integrity of the artifact in the pod's local storage. If the artifact's digest does not match its contents, it is deleted and re-fetched.
