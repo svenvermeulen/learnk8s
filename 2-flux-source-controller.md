@@ -82,6 +82,7 @@ It checks if the monitored resource is suspended, and if not, proceeds to apply 
 - reconcileStorage
 - reconcileSource
 - reconcileArtifact
+
 Finally, it summarizes and patches the resource.
 The reconciliation steps act much like they do for `GitRepositoryReconciler`. 
 
@@ -240,8 +241,95 @@ $ kubectl exec -n flux-system -it source-controller-f7c9b977f-sk5pt -- /bin/sh
 
 After a while, when reconciliation runs, the artifact is re-created by the code but the only message I can find about it is `stored artifact for revision 'master@sha1:0b1481aa8ed0a6c34af84f779824a74200d5c1d6'` in the GitRepository's `status.conditions`; no event shows up with `kubectl get events`.
 
+#### BucketReconciler
+
+Let's look at an [example](https://fluxcd.io/flux/components/source/buckets/#example) resource from the flux documentation.
+
+I quickly set up a minio bucket on my cluster following [this quickstart](https://min.io/docs/minio/kubernetes/upstream/)
+I put some data in a `TESTFILE.md` and copy it to my bucket `testbucket` on minio instance `myminio`:
+
+```
+$ cat 11111 > TESTFILE.md
+$ mc cp ./TESTFILE.md myminio/testbucket/
+...Documents/selfdev/TESTFILE.md: 6 B / 6 B 
+```
+
+I now create an instance of the `Bucket` CRD on my cluster; I expect a corresponding `BucketReconciler` running in a pod to synchronize files from that bucket to its local filesystem. Let's see it in action. My `bucket.yaml` looks like this:
 
 
-  
 
+
+
+An entry shows up in `kubectl get events` about the new artifact downloaded from `minio`:
+
+```
+49s                    Normal    NewArtifact             Bucket/minio-bucket     stored artifact with 1 fetched files from 'testbucket' bucket
+``` 
+
+The file is indeed present on the local filesystem of the `source-controller` pod:
+```
+$ kubectl exec -n flux-system -it source-controller-f7c9b977f-sk5pt -- /bin/sh
+~ $ ls
+~ $ ls /data/bucket/default/minio-bucket
+bc653c4fe645683dca61d42ca0103a3c6929d067235ec8c7e790685df80ade34.tar.gz       latest.tar.gz
+bc653c4fe645683dca61d42ca0103a3c6929d067235ec8c7e790685df80ade34.tar.gz.lock
+
+~ $ tar x -O -f /data/bucket/default/minio-bucket/bc653c4fe645683dca61d42ca0103a3c6929d067235ec8c7e790685df80ade34.tar.gz TESTFILE.md
+11111
+~ $ tar x -O -f /data/bucket/default/minio-bucket/latest.tar.gz TESTFILE.md
+11111
+```
+
+THe files are exposed through a built-in http server running inside the `source-controller` pod; I can access them from a random pod in the `flux-system` namespace that has `wget` available:
+
+```
+~ $ wget -O - http://source-controller.flux-system.svc.cluster.local./bucket/default/minio-bucket/latest.tar.gz | tar zxfO - TESTFILE.md 
+Connecting to source-controller.flux-system.svc.cluster.local. (10.96.35.133:80)
+writing to stdout
+-                    100% |****************************************************************************************************************************************|   123  0:00:00 ETA
+written to stdout
+11111
+```
+
+
+
+Now, when I change the contents of `TESTFILE.md` locally and upload to my bucket, flux's `BucketReconciler` will take care of updating the files inside the pod.
+
+```
+$ echo 22222 > TESTFILE.md 
+$ mc cp ./TESTFILE.md myminio/testbucket/
+...Documents/selfdev/TESTFILE.md: 6 B / 6 B ┃▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+```
+
+Reconciliation has not yet run: 
+
+```
+$ kubectl get events
+LAST SEEN   TYPE      REASON                  OBJECT                  MESSAGE
+19m         Normal    NewArtifact             bucket/minio-bucket     stored artifact with 1 fetched files from 'testbucket' bucket
+3m39s       Normal    ArtifactUpToDate        bucket/minio-bucket     artifact up-to-date with remote revision: 'sha256:bc653c4fe645683dca61d42ca0103a3c6929d067235ec8c7e790685df80ade34'
+4m30s       Normal    GitOperationSucceeded   gitrepository/podinfo   no changes since last reconcilation: observed revision 'master@sha1:0b1481aa8ed0a6c34af84f779824a74200d5c1d6'
+```
+
+A bit later though, reconciliation has run:
+
+```
+$ kubectl get events
+LAST SEEN   TYPE      REASON                  OBJECT                  MESSAGE
+8s          Normal    NewArtifact             bucket/minio-bucket     stored artifact with 1 fetched files from 'testbucket' bucket
+5m11s       Normal    ArtifactUpToDate        bucket/minio-bucket     artifact up-to-date with remote revision: 'sha256:bc653c4fe645683dca61d42ca0103a3c6929d067235ec8c7e790685df80ade34'
+```
+
+The expectation is now that fetching the `latest.tar.gz` file through `source-controller`'s http server will return the new file contents:
+
+```
+~ $ wget -O - http://source-controller.flux-system.svc.cluster.local./bucket/default/minio-bucket/latest.tar.gz | tar zxfO - TESTFILE.md
+Connecting to source-controller.flux-system.svc.cluster.local. (10.96.35.133:80)
+writing to stdout
+-                    100% |****************************************************************************************************************************************|   123  0:00:00 ETA
+written to stdout
+22222
+```
+
+Enough for the `source-controller`. For now, anyway.
 
