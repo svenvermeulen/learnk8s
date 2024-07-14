@@ -4,21 +4,21 @@ Let's now have a look at the [Kustomize Controller](https://fluxcd.io/flux/compo
 
 Sounds promising? Let's dig into it.
 
-##Overview
+## Overview
 
 This is another instance of the [Operator Pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/); it is implemented using
 - a [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/), in particular the [kustomization](https://github.com/fluxcd/kustomize-controller/blob/v1.3.0/config/crd/bases/kustomize.toolkit.fluxcd.io_kustomizations.yaml) CRD
 - a [kustomization controller](https://github.com/fluxcd/kustomize-controller/blob/v1.3.0/internal/controller/kustomization_controller.go) which monitors instances of the kustomization CRD and makes sure cluster state reflects what's described in these.
 
 
-##Code
+## Code
 
 Let's inspect the kustomization controller code a bit to get a feel for how this should all behave.
 Some questions to have in mind while digging in:
 - how does the controller detect the difference between the desired and current state of a kustomization?
 - how is the kustomization executed? Does it use the `kustomize` command line tool (probably its `build` command), or does it import some library and do the same thing instead?
 
-###KustomizationReconciler
+### KustomizationReconciler
 
 This reconciler populates a `kustomizev1.kustomization`; this is a CRD describing the desired state for a kustomization.
 It obtains the source artifact for the object it's reconciling, then makes sure that all dependencies (declared in `spec.dependsOn`) are ready.
@@ -40,7 +40,7 @@ These groups are then applied on the cluster in order.
 
 After this, `reconcile` makes sure that the reconciled resources are healthy.
 
-##Practice
+## Practice
 
 Let's play around with this a bit:
 - Create a directory with a `kustomization` and a deployment
@@ -48,7 +48,7 @@ Let's play around with this a bit:
 - Create a `Bucket` to have the `source-controller` fetch data from minio
 - Create a `Kustomization` resource on the cluster to have
 
-###Creating the kustomization
+### Creating the kustomization
 
 Resources adapted from [kubernetes documentation](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/):
 ```
@@ -96,7 +96,7 @@ EOF
 
 ```
 
-###Upload artifact to minio
+### Upload artifact to minio
 
 I followed [these](https://min.io/docs/minio/kubernetes/upstream/index.html) instructions to install a dev version of minio on my cluster. 
 I have used `mc alias set myminio http://localhost:9000 minioadmin minioadmin` to create an `mc` alias `myminio` for it. 
@@ -110,7 +110,7 @@ Bucket created successfully `myminio/kustomizebucket`.
 $ mc cp --recursive ./mykustomization/ myminio/kustomizebucket
 ```
 
-###Create a Bucket resource on k8s
+### Create a Bucket resource on k8s
 
 note: I've created a port-forward to `localhost:9000` for my minio instance
 I need a secret to store the username and password for accessing my dev minio instance.
@@ -154,7 +154,7 @@ kustomizebucket   10.244.0.16:9000   46m   True    stored artifact: revision 'sh
 From now on, flux will take care of synchronizing the contents of bucket `kustomizebucket` on my minio instance to the `source-controller`.
 When I next create a `Kustomization` resource, the `kustomize-controller` will grab that source and, if it has changed, `build` manifests and `apply` them on the cluster.
 
-###Create a Kustomization resource on k8s
+### Create a Kustomization resource on k8s
 
 Now for the `Kustomization`. Creating this resource will tell flux to build and apply a kustomization on the cluster based on what it pulls out of `kustomizebucket` - a `Deployment` named `my-nginx`, with 3 replicas.
 
@@ -191,8 +191,4 @@ $ kubectl get deployment my-nginx
 NAME       READY   UP-TO-DATE   AVAILABLE   AGE
 my-nginx   3/3     3            3           33s
 ```
-
-
-
-
 
