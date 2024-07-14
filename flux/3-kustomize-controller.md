@@ -99,10 +99,9 @@ EOF
 ### Upload artifact to minio
 
 I followed [these](https://min.io/docs/minio/kubernetes/upstream/index.html) instructions to install a dev version of minio on my cluster. 
-I have used `mc alias set myminio http://localhost:9000 minioadmin minioadmin` to create an `mc` alias `myminio` for it. 
-On that minio instance, I used `mc cp ./mykustomization.tar.gz myminio/kustomizebucket` to create a bucket named `kustomizebucket`.
-
-I'll store `mykustomization.tar.gz` in that bucket:
+I've created a port-forward to `localhost:9000` for my minio instance.
+I use `mc alias set myminio http://localhost:9000 minioadmin minioadmin` to create an `mc` alias `myminio` for my minio instance.
+Now, I store the contents of `mykustomization` in a bucket named `kustomizebucket`:
 ```
 $ mc mb myminio/kustomizebucket
 Bucket created successfully `myminio/kustomizebucket`.
@@ -112,7 +111,6 @@ $ mc cp --recursive ./mykustomization/ myminio/kustomizebucket
 
 ### Create a Bucket resource on k8s
 
-note: I've created a port-forward to `localhost:9000` for my minio instance
 I need a secret to store the username and password for accessing my dev minio instance.
 Trigger warning: I use the default username `minioadmin` and password `minioadmin`.
 
