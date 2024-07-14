@@ -66,8 +66,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-nginx
+  namespace: default
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      run: my-nginx
   template:
     metadata:
       labels:
@@ -85,6 +89,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-nginx
+  namespace: default
 spec:
   replicas: 3
 EOF
@@ -176,17 +181,16 @@ The kustomization has been applied to the cluster, resulting in the creation of 
 ```
 $ kubectl get kustomization mytestkustomization
 NAME                  AGE   READY   STATUS
-mytestkustomization   15s   True    Applied revision: sha256:21ed3370404007dfd72b5aacec66f04d624d56d8458bc07a166a3b7038a68bf9
-
-************* ALMOST THERE *****************
-logs now show this error on the kustomize-controller:
-```
-# Warning: 'patchesStrategicMerge' is deprecated. Please use 'patches' instead. Run 'kustomize edit fix' to update your Kustomization automatically.
-{"level":"error","ts":"2024-07-14T10:23:20.513Z","msg":"Reconciliation failed after 101.788955ms, next try in 5m0s","controller":"kustomization","controllerGroup":"kustomize.toolkit.fluxcd.io","controllerKind":"Kustomization","Kustomization":{"name":"mytestkustomization","namespace":"default"},"namespace":"default","name":"mytestkustomization","reconcileID":"0e0e27eb-807f-4fa4-baaf-a282c2d8508d","revision":"sha256:47e6dd76df9939678f74e3e7b4c2069fd60bfc4888d50c68f83f5ed92892a8b0","error":"Deployment/my-nginx namespace not specified: the server could not find the requested resource\n"}
+mytestkustomization   15s   True    Applied revision: sha256:18616c26738bf62e20a8d2e7b535d91f4a37b04e536016df30fe685d9d80e833
 ```
 
+and indeed there is now a deployment with 3 replicas present on the cluster:
 
- 
+```
+$ kubectl get deployment my-nginx
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   3/3     3            3           33s
+```
 
 
 
