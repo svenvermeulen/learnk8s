@@ -94,8 +94,9 @@ The reconciliation steps act much like they do for `GitRepositoryReconciler`.
 Let's see this in practice. Let's try [this example](https://fluxcd.io/flux/components/source/gitrepositories/#example) GitRepository manifest from the fluxcd documentation:
 
 ```
-$ cat gitrepository.yaml 
+cat gitrepository.yaml 
 ---
+cat << EOF | kubectl apply -f - 
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -106,12 +107,7 @@ spec:
   url: https://github.com/stefanprodan/podinfo
   ref:
     branch: master
-```
-
-Apply:
-```
-$ kubectl apply -f gitrepository.yaml 
-gitrepository.source.toolkit.fluxcd.io/podinfo created
+EOF
 ```
 
 Inspect the GitRepository resource: 
@@ -168,7 +164,6 @@ status:
 ```
 $ wget http://source-controller.flux-system.svc.cluster.local./gitrepository/default/podinfo/0b1481aa8ed0a6c34af84f779824a74200d5c1d6.tar.gz
 ```
-
 
 Based on the `source-controller` code and `status.artifact.url`, we should be able to connect to the source controller pod and locate the artifact on its storage volume.
 
@@ -256,10 +251,6 @@ $ mc cp ./TESTFILE.md myminio/testbucket/
 
 I now create an instance of the `Bucket` CRD on my cluster; I expect a corresponding `BucketReconciler` running in a pod to synchronize files from that bucket to its local filesystem. Let's see it in action. My `bucket.yaml` looks like this:
 
-
-
-
-
 An entry shows up in `kubectl get events` about the new artifact downloaded from `minio`:
 
 ```
@@ -290,8 +281,6 @@ writing to stdout
 written to stdout
 11111
 ```
-
-
 
 Now, when I change the contents of `TESTFILE.md` locally and upload to my bucket, flux's `BucketReconciler` will take care of updating the files inside the pod.
 
