@@ -127,6 +127,34 @@ type: Opaque
 EOF
 ```
 
+I want to access `minio` using a URL, not its IP, as it may change at any time. 
+I create a `Service` for this:
+
+```
+cat << EOF | kubectl apply -f - 
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: minio-dev
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ports:
+  - name: http
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: minio
+  sessionAffinity: None
+  type: ClusterIP
+EOF
+
+```
+
+
 Finally, I create the `Bucket`:
 ```
 cat << EOF | kubectl apply -f - 
@@ -136,7 +164,7 @@ metadata:
   name: kustomizebucket
 spec:
   bucketName: kustomizebucket
-  endpoint: 10.244.0.16:9000
+  endpoint: minio-service.minio-dev.svc.cluster.local.:9000
   interval: 5m0s
   timeout: 60s
   insecure: true
