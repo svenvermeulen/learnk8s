@@ -1,2 +1,3 @@
 # learnk8s
-Learning various stuff around Kubernetes
+Here I document my investigations into Kubernetes related stuff
+
