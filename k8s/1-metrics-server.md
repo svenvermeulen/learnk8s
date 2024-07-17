@@ -21,7 +21,7 @@ error: Metrics API not available
 
 Metrics server has some prerequisites of its own:
 
-### The kube-apiserver must enable an aggregation layer.
+#### The kube-apiserver must enable an aggregation layer.
 
 The appropriate Kubernetes Apiserver flags [need](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-aggregation-layer/#enable-kubernetes-apiserver-flags) to be enabled:
 
@@ -41,21 +41,21 @@ kubectl get pod -n kube-system kube-apiserver-sven-test-control-plane -o yaml | 
 
 The required flags are enabled.
  
-### Nodes must have Webhook authentication and authorization enabled.
+#### Nodes must have Webhook authentication and authorization enabled.
 
 
 
 
-### Kubelet certificate needs to be signed by cluster Certificate Authority 
+#### Kubelet certificate needs to be signed by cluster Certificate Authority 
 
 (or disable certificate validation by passing --kubelet-insecure-tls to Metrics Server)
 
-### Container runtime must implement a container metrics RPCs (or have cAdvisor support)
+#### Container runtime must implement a container metrics RPCs (or have cAdvisor support)
 
 
 
 
-### Network should support following communication:
+#### Network should support following communication:
 - Control plane to Metrics Server. Control plane node needs to reach Metrics Server's pod IP and port 10250 (or node IP and custom port if hostNetwork is enabled). Read more about control plane to node communication.
 - Metrics Server to Kubelet on all nodes. Metrics server needs to reach node address and Kubelet port. Addresses and ports are configured in Kubelet and published as part of Node object. Addresses in .status.addresses and port in .status.daemonEndpoints.kubeletEndpoint.port field (default 10250). Metrics Server will pick first node address based on the list provided by kubelet-preferred-address-types command line flag (default InternalIP,ExternalIP,Hostname in manifests).
  
@@ -281,12 +281,4 @@ I0717 08:15:05.286952       1 httplog.go:132] "HTTP" verb="LIST" URI="/apis/metr
 ```
 
 This is probably how the `Horizontal Pod Autoscaler` interacts with `metrics-server` too; when playing with `HPA`, I might be able to see the same log entries when *that* contacts metrics server.
-
-
-
- 
-
-
-
-
 
