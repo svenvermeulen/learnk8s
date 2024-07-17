@@ -1,3 +1,5 @@
+# UNDER CONSTRUCTION
+
 # Horizontal Pod Autoscaler
 
 ## First look at the scaler
@@ -14,7 +16,7 @@ DESCRIPTION:
 ```
 
 Let's find the controller that manages `HorizontalPodAutoscaler` resources.
-An immediate suspect is `cmd/kube-controller-manager/app/autoscaling.go`; a `ControllerDescriptor` for the `HorizontalPodAutoscalerController` is registered by the Controller Manager [here](https://github.com/kubernetes/kubernetes/blob/master/cmd/kube-controller-manager/app/controllermanager.go#L530).
+An immediate suspect is `cmd/kube-controller-manager/app/autoscaling.go`; a `ControllerDescriptor` for the `HorizontalPodAutoscalerController` is registered by the Controller Manager [here](https://github.com/kubernetes/kubernetes/blob/release-1.30/cmd/kube-controller-manager/app/controllermanager.go#L530).
 
 Let's see if it logs anything interesting:
 
@@ -179,11 +181,24 @@ I0717 14:30:51.422557       1 horizontal.go:691] Successful rescale of stress-au
 
 ## A look at the code
 
-Let's take a closer look at the code for the autoscaler.
+Let's take a closer look at the code for the [autoscaler](https://github.com/kubernetes/kubernetes/blob/release-1.30/cmd/kube-controller-manager/app/autoscaling.go).
+`startHPAControllerWithMetricsClient` is called, passing in a few dependencies; Then, `Run` is called on the `HorizontalController`.
+in `horizontal.go` ([code](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go)) we run into `NewHorizontalController`, which puts together various dependencies and constructs a `HorizontalController`.
 
-TODO
+The following dependencies look interesting:
+- eventRecorder: used to publish the events like 'SueccessfulRescale'
+- monitor: publishes some metrics about the HPA (total reconciliations and their duration; total metrics calculated and duration)
+- queue: a rate-limited queue of work items
+- mapper
+some additional dependencies are set after construction of `HorizontalController`:
+- hpaLister
+- podLister
+- replicaCalc
+- 
 
-        
+
+The main work of `HorizontalController` seems to be carried out in `reconcileAutoscaler` TODO
+
 ### The Informer
 
 What is it used for? I had said 
