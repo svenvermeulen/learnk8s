@@ -68,7 +68,7 @@ Fine, this uses pretty close to 2 CPU cores, as expected. I get rid of the pod
 kubectl delete pod stresspod
 ```
 
-Now let's create a `Deployment` to manage such add the scaling section to allow the HPA to do its thing. Let's take a look at the documentation:
+Now let's create a `Deployment` to manage the pod(s) so that then an HPA can do its thing:
 
 ```
 cat << EOF | kubectl apply -f -
@@ -96,14 +96,13 @@ spec:
             cpu: 200m
 EOF
 ```
-This is running now, taking up just about 500cpus (the limit for the deployment):
+This is running now, taking up just about 500mcpus (the limit for the deployment):
 ```
 $ kubectl get pod | grep stress
 stress-66767865fd-8vq4x                      1/1     Running     0               26s
 
 $ kubectl top pod | grep stress
-stress-66767865fd-8vq4x                      500m         1Mi  
-                      499m         1Mi        
+stress-66767865fd-8vq4x                      499m         1Mi        
 ```
 
 
@@ -170,7 +169,7 @@ Events:
 
 ```
 
-Corresponding log entries can be seen:
+Corresponding log entries can be seen - HPA scales the deployment up to 10 replicas:
 ```
 $ kubectl logs -n kube-system kube-controller-manager-sven-test-control-plane | grep -i -e "Successful rescale of stress-autoscaler"
 I0717 14:29:36.052502       1 horizontal.go:691] Successful rescale of stress-autoscaler, old size: 1, new size: 3, reason: cpu resource utilization (percentage of request) above target
@@ -189,15 +188,35 @@ The following dependencies look interesting:
 - eventRecorder: used to publish the events like 'SueccessfulRescale'
 - monitor: publishes some metrics about the HPA (total reconciliations and their duration; total metrics calculated and duration)
 - queue: a rate-limited queue of work items
-- mapper
+
 some additional dependencies are set after construction of `HorizontalController`:
 - hpaLister
 - podLister
-- replicaCalc
-- 
+- replicaCalc - a `ReplicaCalculator` used to calculate the target number of replicas
 
 
-The main work of `HorizontalController` seems to be carried out in `reconcileAutoscaler` TODO
+The main work of `HorizontalController` is a loop triggered in `Run` which ends up calling `reconcileAutoscaler` repeatedly.
+
+### reconcileAutoscaler
+
+`reconcileAutoscaler` emits events and sets conditions on its resource based on its progress.
+
+For example, if `spec.scaleTargetRef` cannot be parsed, a `Warning` event is fired with reason `FailedGetScale`; the `Message` is populated with the actual error message.
+Also, the `AbleToScale` condition is set to `False` with reason `FailedGetScale`; `message` will include a short description and, again, the error that occured.
+
+The currently specced number of replicas for the scaling target is [obtained](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go#L788-798) and stored in `currentReplicas`.
+
+Then, `currentReplicas` is compared against the HPA's specced `minReplicas` and `maxReplicas`; If it is out of range, `desiredReplicas` is set to the edge of the allowed range and the rescale reason is set accordingly to `Current number of replicas above Spec.MaxReplicas` (or below MinReplicas).
+
+If `currentReplicas` is withing the range specced in the HPA, then the desired number of replicas is calculated based on the HPA spec and metrics from `Metrics Server`.
+
+If the target was rescaled successfully, `reconcileAutoscaler`:
+- sets the condition `AbleToScale` to `True`, detailing the success and new number of replicas in its `Message`
+- emits a `Normal` event with reason `SuccessfulRescale`, detailing the new size and reason for scaling in its `Message`.
+(Other events are emitted and conditions are set along the way.)
+
+
+
 
 ### The Informer
 
