@@ -225,4 +225,5 @@ I0717 14:30:21.250972       1 horizontal.go:691] Successful rescale of stress-au
 I0717 14:30:51.422557       1 horizontal.go:691] Successful rescale of stress-autoscaler, old size: 8, new size: 10, reason: cpu resource utilization (percentage of request) above target
 ```
 
-
+That concludes my basic investigation into `HorizontalPodAutoscaler`. It's easy to set up, and uses metrics from `metric server` to calculate the appropriate number of replicas based on actual versus desired resource usage.
+Along the way, it publishes information about the process in the form of log entries, conditions and events.
