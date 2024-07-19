@@ -21,7 +21,7 @@ Let's take a look at the code for the [autoscaler](https://github.com/kubernetes
 in `horizontal.go` ([code](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go)) we run into `NewHorizontalController`, which puts together various dependencies and constructs a `HorizontalController`.
 
 The following dependencies look interesting:
-- eventRecorder: used to publish the events like 'SueccessfulRescale'
+- eventRecorder: used to publish the events like 'SuccessfulRescale'
 - monitor: publishes some metrics about the HPA (total reconciliations and their duration; total metrics calculated and duration)
 - queue: a rate-limited queue of work items. When `HPA`s are added or updated, a corresponding work item is added to this queue 
 
