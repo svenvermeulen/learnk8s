@@ -1,5 +1,3 @@
-# UNDER CONSTRUCTION
-
 # Horizontal Pod Autoscaler
 
 ```
