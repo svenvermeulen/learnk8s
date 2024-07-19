@@ -25,7 +25,7 @@ The following dependencies look interesting:
 - monitor: publishes some metrics about the HPA (total reconciliations and their duration; total metrics calculated and duration)
 - queue: a rate-limited queue of work items. When `HPA`s are added or updated, a corresponding work item is added to this queue 
 
-some additional dependencies are set after construction of `HorizontalController`:
+Some additional dependencies are set after construction of `HorizontalController`:
 - hpaLister
 - podLister
 - replicaCalc - a `ReplicaCalculator` used to calculate the target number of replicas
@@ -43,13 +43,13 @@ The currently specced number of replicas for the scaling target is [obtained](ht
 
 Then, `currentReplicas` is compared against the HPA's specced `minReplicas` and `maxReplicas`; If it is out of range, `desiredReplicas` is set to the edge of the allowed range and the rescale reason is set accordingly to `Current number of replicas above Spec.MaxReplicas` (or below MinReplicas).
 
-If `currentReplicas` is withing the range specced in the HPA, then the desired number of replicas is calculated based on the HPA spec and metrics from `Metrics Server`.
+If `currentReplicas` is within the range specced in the HPA, then the desired number of replicas is calculated based on the HPA spec and metrics from `Metrics Server`.
 
 ### calculating desired replicas
 
- - `computeReplicasForMetrics` [looks](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go#L298-346)) at a list of metric specs and calculates a desired number of replicas for the target based on each metric; then, it returns the highest found number of replicas. So if based on actual versus desired cpu usage we'd need 4 replicas, and based some other metric we'd need 3, the function would return 4 as the desired number of replicas. It calls `computeReplicasForMetric` (singular) for every metric spec passed in.
+ - `computeReplicasForMetrics` [looks](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go#L298-346) at a list of metric specs and calculates a desired number of replicas for the target based on each metric; then, it returns the highest found number of replicas. So if based on actual versus desired cpu usage we'd need 4 replicas, and based some other metric we'd need 3, the function would return 4 as the desired number of replicas. It calls `computeReplicasForMetric` (singular) for every metric spec passed in.
  
- - `computeReplicasForMetric` [[constructs](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go#L424-500) a selector for the metric spec it's interested in and calls a function corresponding to the HPA's target resource type: for pods, for example, it will call `computeStatusForPodsMetric`.
+ - `computeReplicasForMetric` [constructs](https://github.com/kubernetes/kubernetes/tree/release-1.30/pkg/controller/podautoscaler/horizontal.go#L424-500) a selector for the metric spec it's interested in and calls a function corresponding to the HPA's target resource type: for pods, for example, it will call `computeStatusForPodsMetric`.
  
  - `computeStatusForPodsMetric` finally uses the `ReplicaCalculator` that was set after construction. 
  
@@ -57,8 +57,7 @@ If `currentReplicas` is withing the range specced in the HPA, then the desired n
 
 If the target was rescaled successfully, `reconcileAutoscaler`:
 - sets the condition `AbleToScale` to `True`, detailing the success and new number of replicas in its `Message`
-- emits a `Normal` event with reason `SuccessfulRescale`, detailing the new size and reason for scaling in its `Message`.
-(Other events are emitted and conditions are set along the way.)
+- emits a `Normal` event with reason `SuccessfulRescale`, detailing the new size and reason for scaling in its `Message`, (other events are emitted and conditions are set along the way.)
 
 ### The Informers
 
@@ -80,7 +79,7 @@ I0714 12:38:40.023034       1 shared_informer.go:262] Caches are synced for HPA
 ```
 
 Looks like horizontal pod autoscaling is running on my cluster, but not doing much work yet.
-It does seem to also use an informer, my guess would be that it uses that to cache queries agains Kubernetes API for objects that need scaling.
+There's also mention of an Informer, which it uses to avoid repeatedly querying Kubernetes API for pods and HPA definitions.
 
 Let's see if we can get it to scale a pod based on the pod's resource usage.
 
