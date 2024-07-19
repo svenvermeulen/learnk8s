@@ -1,0 +1,91 @@
+# Installing Grafana on Kind
+
+I have a kind cluster running locally; these are my notes following [instructions](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/) from grafana.com for local installation of Grafana on that cluster. 
+
+## Prerequisites
+
+I'm skeptical about the hardware requirements, since I'm running Kind on a puny little laptop.
+The Grafana page [states](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/#minimum-hardware-requirements) 
+> CPU: 250m (approx 2.5 cores)
+
+I'd expect 250m to correspond to 0.25 cores. So I'm not sure if it's that, or 2500m. We'll see how it runs.
+
+As for the database used by Grafana, [supposedly](https://grafana.com/docs/grafana/latest/setup-grafana/installation/#supported-databases) 
+> By default Grafana uses an embedded SQLite database, which is stored in the Grafana installation location.
+
+For the needs of playing around locally, this should be good enough.
+
+## Installation
+
+I'll be using the following namespace:
+```
+$ kubectl create namespace sven-grafana
+namespace/sven-grafana created
+```
+
+Then, the instructions tell me to copy-paste some manifests into a file `grafana.yaml`. A quick look at the resources defined in that file shows that the image used for pods managed by the grafana Deployment is `grafana/grafana:latest`. I'll have to load this image onto my kind cluster.
+
+```
+$ kubectl apply -f grafana.yaml --namespace=sven-grafana
+persistentvolumeclaim/grafana-pvc created
+deployment.apps/grafana created
+service/grafana created
+```
+
+I fully expect a problem in container creation for the `grafana` pod. Let's see:
+```
+$ kubectl get pod -n sven-grafana | grep grafana
+grafana-69946c9bd6-twvbj   0/1     ContainerCreating   0          50s
+
+$ kubectl events -n sven-grafana Pod/grafana-69946c9bd6-twvbj
+LAST SEEN             TYPE     REASON                  OBJECT                              MESSAGE
+2m7s                  Normal   SuccessfulCreate        ReplicaSet/grafana-69946c9bd6       Created pod: grafana-69946c9bd6-twvbj
+2m7s                  Normal   WaitForFirstConsumer    PersistentVolumeClaim/grafana-pvc   waiting for first consumer to be created before binding
+2m7s                  Normal   ScalingReplicaSet       Deployment/grafana                  Scaled up replica set grafana-69946c9bd6 to 1
+2m6s (x2 over 2m7s)   Normal   ExternalProvisioning    PersistentVolumeClaim/grafana-pvc   waiting for a volume to be created, either by external provisioner "rancher.io/local-path" or manually created by system administrator
+2m6s                  Normal   Provisioning            PersistentVolumeClaim/grafana-pvc   External provisioner is provisioning volume for claim "sven-grafana/grafana-pvc"
+119s                  Normal   Scheduled               Pod/grafana-69946c9bd6-twvbj        Successfully assigned sven-grafana/grafana-69946c9bd6-twvbj to sven-test-control-plane
+119s                  Normal   ProvisioningSucceeded   PersistentVolumeClaim/grafana-pvc   Successfully provisioned volume pvc-a8d03c24-dc5f-4b33-a0fc-14ddffba43d8
+118s                  Normal   Pulling                 Pod/grafana-69946c9bd6-twvbj        Pulling image "grafana/grafana:latest"
+```
+
+It looks like it's not breaking yet. Why? 
+
+```
+$ docker exec -ti sven-test-control-plane bash
+root@sven-test-control-plane:/# crictl images | grep grafana
+docker.io/grafana/grafana                       latest               c42c21cd0ebcb       123MB
+```
+
+OK, that's nice, it was already there. It just needed a bit of patience:
+
+```
+$ kubectl get pod -n sven-grafana | grep grafana
+grafana-69946c9bd6-twvbj   1/1     Running   0          5m37s
+```
+
+I set up a port-forward to this pod to access the grafana UI running on it:
+```
+$ kubectl port-forward pod/grafana-69946c9bd6-twvbj --namespace=sven-grafana --address 0.0.0.0 3000:3000
+Forwarding from 0.0.0.0:3000 -> 3000
+```
+
+Nice - now I can access Grafana's UI from my browser. The default credentials are username `admin` and password `admin`. Grafana prompts me to change these to something safe.
+
+It just sits there now - it doesn't seem to put any crazy load on my laptop just by existing:
+```
+$ kubectl top pods -n sven-grafana
+NAME                       CPU(cores)   MEMORY(bytes)   
+grafana-69946c9bd6-twvbj   2m           45Mi            
+```
+TODO:
+
+- investigate some logs
+- look at the filesystem
+- look at grafana's sqlite database
+
+
+
+
+ 
+
