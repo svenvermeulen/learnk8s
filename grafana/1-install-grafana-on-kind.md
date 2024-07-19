@@ -174,7 +174,6 @@ I can copy the database to my computer and inspect it locally, though:
 $ kubectl cp sven-grafana/grafana-69946c9bd6-twvbj:/var/lib/grafana/grafana.db ./grafana.db
 tar: removing leading '/' from member names
 
-```
 $ sqlite3 ./grafana.db
 SQLite version 3.31.1 2020-01-27 19:55:54
 Enter ".help" for usage hints.
@@ -220,7 +219,6 @@ There's not much data there, yet; Grafana did create a default admin user upon i
 ```
 sqlite> select * from user;
 1|0|admin|admin@localhost||aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|bbbbbbbbbb|XXXXXXXXXX||1|1|0||2024-07-19 09:57:00|2024-07-19 10:12:30|0|2024-07-19 11:34:58|0|0|
-
 ```
 
 I can revisit the database after some dashboards and maybe alerts have been setup. 
