@@ -167,6 +167,83 @@ This looks much better! I'll ignore the `GOMAXPROCS` warning and continue.
 
 ### Configuring RBAC
 
+The proposed `prom_rbac.yaml` manifest again includes a reference to a `ServiceAccount` (`prometheus`, created in the same file) in the `default` namespace. I'll change this to refer to my own namespace, then apply:
+
+```
+$ sed -i 's/  namespace: default/  namespace: sven-prometheus/g' ./prom_rbac.yaml
+
+$ kubectl apply -f prom_rbac.yaml -n sven-prometheus
+serviceaccount/prometheus unchanged
+resource mapping not found for name: "prometheus" namespace: "" from "prom_rbac.yaml": no matches for kind "ClusterRole" in version "rbac.authorization.k8s.io/v1beta1"
+ensure CRDs are installed first
+resource mapping not found for name: "prometheus" namespace: "" from "prom_rbac.yaml": no matches for kind "ClusterRoleBinding" in version "rbac.authorization.k8s.io/v1beta1"
+ensure CRDs are installed first
+```
+
+That doesn't seem right; let's see what apiVersions are available for `rbac.authorization.k8s.io` and what's in the manifest yaml:
+```
+$ kubectl api-versions | grep 'rbac.authorization.k8s.io'
+rbac.authorization.k8s.io/v1
+
+$ cat prom_rbac.yaml | grep 'apiVersion: rbac.authorization.k8s.io' | sort | uniq
+apiVersion: rbac.authorization.k8s.io/v1beta1
+```
+
+I probably just need to change that apiVersion to what's available on my system:
+```
+$ sed -i 's/rbac.authorization.k8s.io\/v1beta1/rbac.authorization.k8s.io\/v1/g' prom_rbac.yaml
+
+$ kubectl apply -f prom_rbac.yaml -n sven-prometheus
+serviceaccount/prometheus unchanged
+clusterrole.rbac.authorization.k8s.io/prometheus created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus created
+```
+
+Now it worked.
+
+### Deploying Prometheus
+
+The next [step](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/configuration/configure-infrastructure-manually/prometheus/prometheus-operator/#deploy-prometheus) is the creation of a 2-replica prometheus instance.
+
+```
+$ kubectl apply -f prometheus.yaml -n sven-prometheus
+prometheus.monitoring.coreos.com/prometheus created
+```
+
+The guide states that the manifest
+> Instructs Prometheus to automatically pick up all configured ServiceMonitor resources using {}. You’ll create a ServiceMonitor to get Prometheus to scrape its own metrics.
+
+This actually uses the `Prometheus` CRD that was created earlier. The related controller probably creates a pod somewhere. Let's go find them:
+
+```
+$ kubectl get prometheus -n sven-prometheus
+NAME         VERSION   DESIRED   READY   RECONCILED   AVAILABLE   AGE
+prometheus   v2.22.1   2         2       True         True        15m
+
+$ kubectl get pod -A | grep prometheus
+sven-prometheus      prometheus-operator-6b88448777-bgh5m              1/1     Running                 0               109m
+sven-prometheus      prometheus-prometheus-0                           0/2     Init:ImagePullBackOff   0               3m40s
+sven-prometheus      prometheus-prometheus-1                           0/2     Init:ImagePullBackOff   0               3m40s
+```
+
+OK, the controller created two prometheus pods in my namespace; it looks like the relevant container image is not available on my kind node.
+I use `docker pull` to get the image:
+```
+$ docker pull quay.io/prometheus/prometheus:v2.22.1
+v2.22.1: Pulling from prometheus/prometheus
+<...>
+Digest: sha256:b899dbd1b9017b9a379f76ce5b40eead01a62762c4f2057eacef945c3c22d210
+Status: Downloaded newer image for quay.io/prometheus/prometheus:v2.22.1
+quay.io/prometheus/prometheus:v2.22.1
+```
+
+Now the prometheus pods are up and running:
+```
+$ kubectl get pod -A | grep prometheus
+sven-prometheus      prometheus-operator-6b88448777-bgh5m              1/1     Running     0               118m
+sven-prometheus      prometheus-prometheus-0                           2/2     Running     0               13m
+sven-prometheus      prometheus-prometheus-1                           2/2     Running     0               13m
+```
 
 
 
