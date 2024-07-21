@@ -1,4 +1,4 @@
-# Introduction
+# Prometheus installation - part 1
 
 Following the [guide](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/configuration/configure-infrastructure-manually/prometheus/prometheus-operator/) provided on grafana.com
 
@@ -245,5 +245,46 @@ sven-prometheus      prometheus-prometheus-0                           2/2     R
 sven-prometheus      prometheus-prometheus-1                           2/2     Running     0               13m
 ```
 
+### Creating the Service
 
+This is pretty straightforward:
+```
+$ kubectl apply -f prom_svc.yaml -n sven-prometheus
+service/prometheus created
+
+$ kubectl get service -n sven-prometheus
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+prometheus            ClusterIP   10.96.209.140   <none>        9090/TCP   37s
+prometheus-operated   ClusterIP   None            <none>        9090/TCP   23m
+prometheus-operator   ClusterIP   None            <none>        8080/TCP   146m
+```
+
+After setting up a port-forward, I should be able to access prometheus:
+```
+s$ kubectl port-forward -n sven-prometheus svc/prometheus 9090
+Forwarding from 127.0.0.1:9090 -> 9090
+Forwarding from [::1]:9090 -> 9090
+Handling connection for 9090
+Handling connection for 9090
+Handling connection for 9090
+```
+
+Indeed, the prometheus UI is accessible.
+
+## Creating a ServiceMonitor
+
+Here, the guide tells us to make prometheus scrape some of its own endpoints.
+I use the `ServiceMonitor` for this (one of the prometheus `CRDs` created earlier):
+
+```
+$ kubectl apply -f prometheus_servicemonitor.yaml -n sven-prometheus
+servicemonitor.monitoring.coreos.com/prometheus-self created
+```
+
+Indeed, prometheus now scrapes its own endpoints and stores the metrics.
+
+Next up is the section [Create a kubernetes secret to store grafana cloud credentials](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/configuration/configure-infrastructure-manually/prometheus/prometheus-operator/#create-a-kubernetes-secret-to-store-grafana-cloud-credentials)
+
+
+This is where I'll start to divert more from the instructions in the guide; this is for part 2 of the installation.
 
