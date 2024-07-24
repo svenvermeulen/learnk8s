@@ -277,7 +277,22 @@ Here, the guide tells us to make prometheus scrape some of its own endpoints.
 I use the `ServiceMonitor` for this (one of the prometheus `CRDs` created earlier):
 
 ```
-$ kubectl apply -f prometheus_servicemonitor.yaml -n sven-prometheus
+$ cat prometheus-servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus-self
+  labels:
+    app: prometheus
+spec:
+  endpoints:
+  - interval: 30s
+    port: web
+  selector:
+    matchLabels:
+      app: prometheus
+
+$ kubectl apply -f prometheus-servicemonitor.yaml -n sven-prometheus
 servicemonitor.monitoring.coreos.com/prometheus-self created
 ```
 
