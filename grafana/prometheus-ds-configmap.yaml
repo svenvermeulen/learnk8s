@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: prometheus-datasource
+data:
+  grafana-ds.yaml: |
+    apiVersion: 1
+
+    datasources:
+      - name: prometheus-fromfile
+        type: prometheus
+        access: proxy
+        # Access mode - proxy (server in the UI) or direct (browser in the UI).
+        url: http://prometheus.sven-prometheus.svc.cluster.local:9090
+        jsonData:
+          httpMethod: POST
+          manageAlerts: true
+          prometheusType: Prometheus
+          prometheusVersion: 2.44.0
+          cacheLevel: 'Low'
+          disableRecordingRules: false
+          incrementalQueryOverlapWindow: 10m

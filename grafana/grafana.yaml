@@ -62,10 +62,20 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-pv
+            - mountPath: /etc/grafana/provisioning/datasources
+              name: grafana-prov-ds
+#            - mountPath: /tmp/bla
+#              name: grafana-prov-ds
       volumes:
         - name: grafana-pv
           persistentVolumeClaim:
             claimName: grafana-pvc
+        - name: grafana-prov-ds
+          configMap:
+            name: prometheus-datasource
+            items:
+            - key: "grafana-ds.yaml"
+              path: "grafana-ds.yaml"
 ---
 apiVersion: v1
 kind: Service
