@@ -4,4 +4,5 @@ Interesting topics for future investigation / writing about :
   - used in service meshes. Find an example e.g. in Kong?
 
 - SECCOMP profiles
+- kube bench and other aqua security tools: https://github.com/aquasecurity/kube-bench. Look at code, use on cluster
 
