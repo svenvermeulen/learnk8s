@@ -1,13 +1,12 @@
 ## Introduction
 
-- about aqua and kube-bench
-- about CIS benchmarks
+[Aqua security](https://www.aquasec.com/) specialize in security solutions for Cloud Native, Container and Serverless. I ran into a [talk](https://www.youtube.com/watch?v=7mgBxr4D-xs) by one of their employees, Benjy Portnoy. `kube-bench` is shown in this talk, so I decided to have a look.
 
 
 ## Getting started
 
-https://github.com/aquasecurity/kube-bench
-
+- repo: https://github.com/aquasecurity/kube-bench
+- have a kubernetes cluster at hand
 
 ## Running kube-bench on my local cluster
 
@@ -68,20 +67,6 @@ $ kubectl logs kube-bench-b8nhs | grep -A5 "^== Summary"
 0 checks INFO
 
 --
-== Summary policies ==
-0 checks PASS
-0 checks FAIL
-35 checks WARN
-0 checks INFO
-
-== Summary total ==
-62 checks PASS
-10 checks FAIL
-60 checks WARN
-0 checks INFO
-
-
-
 == Summary policies ==
 0 checks PASS
 0 checks FAIL
@@ -240,4 +225,7 @@ Then, `TestItem`, defined [here](https://github.com/aquasecurity/kube-bench/blob
 
 ## Conclusion
 
- 
+`kube-bench` provides an easy way to audit kubernetes clusters against CIS security benchmarks. Auditing is set up using a set of yaml files, which presribe shell commands to obtain data on the cluster's nodes.
+
+
+
