@@ -53,7 +53,8 @@ It looks like it's not breaking yet. Why?
 
 ```
 $ docker exec -ti sven-test-control-plane crictl images | grep grafana
-docker.io/grafana/grafana                       latest               c42c21cd0ebcb       123MB```
+docker.io/grafana/grafana                       latest               c42c21cd0ebcb       123MB
+```
 
 OK, that's nice, it was already there. It just needed a bit of patience:
 
