@@ -6,3 +6,6 @@ Interesting topics for future investigation / writing about :
 - SECCOMP profiles
 - kube bench and other aqua security tools: https://github.com/aquasecurity/kube-bench. Look at code, use on cluster
 
+- Cloudflare / CDN
+- Event sourcing implementation
+
