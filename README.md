@@ -10,4 +10,6 @@ I usually dive into some documentation, document what trouble I run into trying 
 ## Structure
 
 I separate the investigations into areas such as `flux`, `grafana`, `k8s` and `postgres`.
-In [topics.md](topics.md) I collect topics that I'm interested in investigating in the future.
+In [topics.md](topics.md) I collect topics that I'm interested in investigating in the future. 
+
+There is no particular order to the topics, whenever I think I need to get more clarity on something I put it on the list and whenever I feel like it I pick it up and do a shallow dive.
