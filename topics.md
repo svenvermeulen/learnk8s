@@ -8,4 +8,7 @@ Interesting topics for future investigation / writing about :
 
 - Cloudflare / CDN
 - Event sourcing implementation
+- OpenTelemetry e.g. ADOT distribution
+- fluentd - ELK
 
+- rewrite to use TF
